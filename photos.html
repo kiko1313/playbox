@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Gallery</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            padding: 40px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #D72638, #7B2CBF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: #999;
+            font-size: 1rem;
+        }
+
+        /* Masonry Grid */
+        .gallery {
+            max-width: 1200px;
+            margin: 0 auto;
+            column-count: 4;
+            column-gap: 15px;
+        }
+
+        @media (max-width: 1200px) {
+            .gallery {
+                column-count: 3;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .gallery {
+                column-count: 2;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .gallery {
+                column-count: 1;
+            }
+        }
+
+        .photo-item {
+            break-inside: avoid;
+            margin-bottom: 15px;
+            position: relative;
+            cursor: pointer;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .photo-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(215, 38, 56, 0.3);
+        }
+
+        .photo-item img {
+            width: 100%;
+            display: block;
+            border-radius: 12px;
+        }
+
+        .photo-item::after {
+            content: '🔍';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 3rem;
+            opacity: 0;
+            transition: all 0.3s ease;
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+        }
+
+        .photo-item:hover::after {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+
+        /* Lightbox Modal */
+        .lightbox {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .lightbox.active {
+            display: flex;
+        }
+
+        .lightbox img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 8px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            font-size: 3rem;
+            color: #fff;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.1);
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.3s;
+        }
+
+        .close-btn:hover {
+            background: rgba(215, 38, 56, 0.8);
+        }
+
+        .exit-link {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: background 0.3s;
+            z-index: 100;
+        }
+
+        .exit-link:hover {
+            background: rgba(215, 38, 56, 0.8);
+        }
+    </style>
+</head>
+
+<body>
+    <a href="index.html" class="exit-link">← Back to Home</a>
+
+    <div class="header">
+        <h1>Photo Gallery</h1>
+        <p>Click any photo to view in full size</p>
+    </div>
+
+    <div class="gallery" id="gallery">
+        <!-- Photos will be injected here -->
+    </div>
+
+    <!-- Lightbox Modal -->
+    <div class="lightbox" id="lightbox">
+        <span class="close-btn" onclick="closeLightbox()">×</span>
+        <img src="" alt="Full size" id="lightboxImg">
+    </div>
+
+    <script>
+        const MONETAG_LINK = 'https://otieu.com/4/10384328';
+
+        // Sample photos (replace with your actual images)
+        const photos = [
+            'https://picsum.photos/400/600?random=1',
+            'https://picsum.photos/400/500?random=2',
+            'https://picsum.photos/400/700?random=3',
+            'https://picsum.photos/400/550?random=4',
+            'https://picsum.photos/400/650?random=5',
+            'https://picsum.photos/400/600?random=6',
+            'https://picsum.photos/400/500?random=7',
+            'https://picsum.photos/400/700?random=8',
+            'https://picsum.photos/400/550?random=9',
+            'https://picsum.photos/400/600?random=10',
+            'https://picsum.photos/400/650?random=11',
+            'https://picsum.photos/400/550?random=12',
+        ];
+
+        // Track if user has clicked (only trigger Monetag once per session)
+        let hasTriggeredAd = sessionStorage.getItem('monetag_triggered') === 'true';
+
+        // Render gallery
+        function renderGallery() {
+            const gallery = document.getElementById('gallery');
+            photos.forEach((photo, index) => {
+                const item = document.createElement('div');
+                item.className = 'photo-item';
+                item.innerHTML = `<img src="${photo}" alt="Photo ${index + 1}" loading="lazy">`;
+                item.onclick = () => openLightbox(photo);
+                gallery.appendChild(item);
+            });
+        }
+
+        // Open Lightbox
+        function openLightbox(imgSrc) {
+            // Trigger Monetag link (only once per session)
+            if (!hasTriggeredAd) {
+                window.open(MONETAG_LINK, '_blank');
+                sessionStorage.setItem('monetag_triggered', 'true');
+                hasTriggeredAd = true;
+            }
+
+            // Show full size image
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImg = document.getElementById('lightboxImg');
+            lightboxImg.src = imgSrc;
+            lightbox.classList.add('active');
+        }
+
+        // Close Lightbox
+        function closeLightbox() {
+            const lightbox = document.getElementById('lightbox');
+            lightbox.classList.remove('active');
+        }
+
+        // Close on background click
+        document.getElementById('lightbox').addEventListener('click', function (e) {
+            if (e.target === this) {
+                closeLightbox();
+            }
+        });
+
+        // Close on Escape key
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                closeLightbox();
+            }
+        });
+
+        // Initialize
+        renderGallery();
+    </script>
+</body>
+
+</html>
