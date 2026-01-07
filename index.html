@@ -753,6 +753,9 @@
 
         // --- MOCK DATA INITIALIZATION ---
         function initData() {
+            // Try to restore from backup if needed
+            attemptRestore();
+
             const storedData = localStorage.getItem('playboxData');
             if (storedData) {
                 state.data = JSON.parse(storedData);
@@ -780,7 +783,25 @@
         }
 
         function saveData() {
-            localStorage.setItem('playboxData', JSON.stringify(state.data));
+            const dataStr = JSON.stringify(state.data);
+            localStorage.setItem('playboxData', dataStr);
+            // BACKUP: Also save to a backup key to prevent total loss
+            localStorage.setItem('playboxData_backup', dataStr);
+            localStorage.setItem('playboxData_timestamp', Date.now().toString());
+        }
+
+        // Auto-restore from backup if main data is missing
+        function attemptRestore() {
+            const mainData = localStorage.getItem('playboxData');
+            const backupData = localStorage.getItem('playboxData_backup');
+
+            if (!mainData && backupData) {
+                console.warn('⚠️ Main data lost! Restoring from backup...');
+                localStorage.setItem('playboxData', backupData);
+                showToast('Data restored from backup!', 'success');
+                return true;
+            }
+            return false;
         }
 
         // --- UTILS ---

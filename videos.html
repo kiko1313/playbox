@@ -176,10 +176,16 @@
             }
 
             console.log('Processing video URL:', src);
+            const lowerSrc = src.toLowerCase();
 
-            // Doodstream - check for various formats
-            if (src.toLowerCase().includes('dood')) {
-                console.log('Detected as Doodstream');
+            // Video embed services (Doodstream, MyVidPlay, Streamtape, etc.)
+            if (lowerSrc.includes('dood') ||
+                lowerSrc.includes('myvidplay') ||
+                lowerSrc.includes('streamtape') ||
+                lowerSrc.includes('filemoon') ||
+                lowerSrc.includes('vidplay') ||
+                lowerSrc.includes('/e/')) {  // Most embeds use /e/ pattern
+                console.log('Detected as video embed service');
                 return `<iframe src="${src}" frameborder="0" allowfullscreen allow="autoplay" style="width:100%;height:100%;"></iframe>`;
             }
 
@@ -192,8 +198,7 @@
                 }
             }
 
-            // Direct video file (check extension OR assume it's a video link)
-            const lowerSrc = src.toLowerCase();
+            // Direct video file
             if (lowerSrc.match(/\.(mp4|webm|ogg|mov|avi)$/i) || src.includes('catbox.moe') || src.includes('video')) {
                 console.log('Detected as direct video');
                 return `<video src="${src}" controls style="width:100%;height:100%;"></video>`;
