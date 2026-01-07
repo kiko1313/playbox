@@ -743,6 +743,7 @@
             data: {
                 videos: [],
                 files: [],
+                photos: [], // Photo URLs for gallery
                 smartLinkUrl: '' // Global Smart Link URL
             }
         };
@@ -754,6 +755,7 @@
                 state.data = JSON.parse(storedData);
                 // Schema Migration for existing data
                 if (!state.data.smartLinkUrl) state.data.smartLinkUrl = '';
+                if (!state.data.photos) state.data.photos = [];
             } else {
                 // Default Data
                 state.data = {
@@ -1111,6 +1113,7 @@
                 <div class="dashboard-grid">
                     <aside class="admin-menu">
                         <button class="active" onclick="switchAdminTab('videos', this)"><i class="fas fa-video"></i> Manage Videos</button>
+                        <button onclick="switchAdminTab('photos', this)"><i class="fas fa-images"></i> Manage Photos</button>
                         <button onclick="switchAdminTab('files', this)"><i class="fas fa-folder"></i> Manage Files & Links</button>
                         <button onclick="switchAdminTab('ads', this)"><i class="fas fa-dollar-sign"></i> Smart Link Settings</button>
                     </aside>
@@ -1130,6 +1133,7 @@
             btn.classList.add('active');
 
             if (tab === 'videos') renderAdminVideos();
+            if (tab === 'photos') renderAdminPhotos();
             if (tab === 'files') renderAdminFiles();
             if (tab === 'ads') renderAdminAds();
         }
@@ -1302,6 +1306,75 @@
                 renderAdminFiles();
             }
         }
+
+        // --- ADMIN: PHOTOS MANAGER ---
+        function renderAdminPhotos() {
+            const content = document.getElementById('adminPanelContent');
+
+            const list = state.data.photos.map((photo, index) => `
+                <div style="display: inline-block; margin: 10px; position: relative;">
+                    <img src="${photo}" style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <button class="btn-delete" style="position: absolute; top: 5px; right: 5px;" onclick="deletePhoto(${index})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `).join('');
+
+            content.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2>Photo Gallery</h2>
+                </div>
+                
+                <!-- Upload Form -->
+                <div style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: var(--radius-sm); margin-bottom: 2rem;">
+                    <h3 style="margin-bottom: 1rem;">Add New Photo</h3>
+                    <p style="color: var(--text-muted); margin-bottom: 1rem; font-size: 0.9rem;">
+                        Upload your photo to <a href="https://imgbb.com" target="_blank" style="color: var(--color-raspberry);">ImgBB</a> or <a href="https://imgur.com" target="_blank" style="color: var(--color-raspberry);">Imgur</a>, then paste the direct image URL here.
+                    </p>
+                    <div>
+                        <input type="text" id="photoUrl" class="form-input" placeholder="https://i.ibb.co/abc123/photo.jpg">
+                    </div>
+                    <button class="btn-nav btn-primary" style="margin-top: 1rem;" onclick="addPhoto()">Add Photo</button>
+                </div>
+
+                <h3 style="margin-bottom: 1rem;">Current Photos (${state.data.photos.length})</h3>
+                <div style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: var(--radius-sm);">
+                    ${list || '<p style="color: var(--text-muted); text-align: center;">No photos yet. Add your first one above!</p>'}
+                </div>
+            `;
+        }
+
+        function addPhoto() {
+            const url = document.getElementById('photoUrl').value.trim();
+            if (!url) return showToast('Please enter a photo URL', 'error');
+            if (!url.startsWith('http')) return showToast('URL must start with http:// or https://', 'error');
+
+            state.data.photos.push(url);
+            saveData();
+            showToast('Photo added to gallery!');
+            document.getElementById('photoUrl').value = '';
+            renderAdminPhotos();
+
+            // Update photos.html file automatically
+            updatePhotosPage();
+        }
+
+        function deletePhoto(index) {
+            if (confirm('Delete this photo?')) {
+                state.data.photos.splice(index, 1);
+                saveData();
+                showToast('Photo removed');
+                renderAdminPhotos();
+                updatePhotosPage();
+            }
+        }
+
+        function updatePhotosPage() {
+            // This syncs data to photos.html via localStorage
+            // photos.html will read from localStorage on load
+            localStorage.setItem('galleryPhotos', JSON.stringify(state.data.photos));
+        }
+
 
         // --- ADMIN: ADS SETTINGS ---
         function renderAdminAds() {

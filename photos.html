@@ -193,35 +193,37 @@
     <script>
         const MONETAG_LINK = 'https://otieu.com/4/10384328';
 
-        // Sample photos (replace with your actual images)
-        const photos = [
-            'https://picsum.photos/400/600?random=1',
-            'https://picsum.photos/400/500?random=2',
-            'https://picsum.photos/400/700?random=3',
-            'https://picsum.photos/400/550?random=4',
-            'https://picsum.photos/400/650?random=5',
-            'https://picsum.photos/400/600?random=6',
-            'https://picsum.photos/400/500?random=7',
-            'https://picsum.photos/400/700?random=8',
-            'https://picsum.photos/400/550?random=9',
-            'https://picsum.photos/400/600?random=10',
-            'https://picsum.photos/400/650?random=11',
-            'https://picsum.photos/400/550?random=12',
-        ];
+        // Load photos from localStorage (saved via admin panel)
+        const stored = localStorage.getItem('galleryPhotos');
+        const photos = stored ? JSON.parse(stored) : [];
 
-        // Track if user has clicked (only trigger Monetag once per session)
-        let hasTriggeredAd = sessionStorage.getItem('monetag_triggered') === 'true';
-
-        // Render gallery
+        // Render gallery with download button
         function renderGallery() {
             const gallery = document.getElementById('gallery');
+            gallery.innerHTML = '';
             photos.forEach((photo, index) => {
                 const item = document.createElement('div');
                 item.className = 'photo-item';
-                item.innerHTML = `<img src="${photo}" alt="Photo ${index + 1}" loading="lazy">`;
-                item.onclick = () => openLightbox(photo);
+                item.innerHTML = `
+                    <img src="${photo}" alt="Photo ${index + 1}" loading="lazy">
+                    <button class="download-btn" style="position:absolute;bottom:5px;right:5px;background:rgba(0,0,0,0.5);color:#fff;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;" onclick="downloadPhoto('${photo}')">⬇️</button>
+                `;
+                item.onclick = (e) => {
+                    // Prevent click when download button is pressed
+                    if (e.target.closest('.download-btn')) return;
+                    openLightbox(photo);
+                };
                 gallery.appendChild(item);
             });
+        }
+
+        function downloadPhoto(url) {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         }
 
         // Open Lightbox
