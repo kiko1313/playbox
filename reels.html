@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlayBox Reels</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Container */
+        .reels-container {
+            height: 100vh;
+            width: 100vw;
+            overflow-y: scroll;
+            overflow-x: hidden;
+            scroll-snap-type: y mandatory;
+            scrollbar-width: none; /* Firefox */
+        }
+
+        .reels-container::-webkit-scrollbar {
+            display: none; /* Chrome/Safari/Edge */
+        }
+
+        /* Individual Reel */
+        .reel {
+            height: 100vh;
+            width: 100vw;
+            scroll-snap-align: start;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+        }
+
+        .reel video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Overlay for Monetag */
+        .monetag-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+            transition: opacity 0.3s;
+        }
+
+        .monetag-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .play-btn {
+            width: 80px;
+            height: 80px;
+            background: #D72638;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 30px rgba(215, 38, 56, 0.6);
+            transition: transform 0.2s;
+        }
+
+        .play-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .play-btn i {
+            font-size: 2rem;
+            margin-left: 4px;
+        }
+
+        .overlay-text {
+            margin-top: 1rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Header */
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), transparent);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            z-index: 100;
+        }
+
+        .top-bar h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .top-bar .exit-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        .top-bar .exit-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Info Overlay (bottom) */
+        .reel-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 2rem 1.5rem;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .reel-info h2 {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .reel-info p {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Side Actions */
+        .side-actions {
+            position: absolute;
+            right: 1rem;
+            bottom: 6rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            z-index: 5;
+        }
+
+        .action-btn {
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1.2rem;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background: rgba(215, 38, 56, 0.8);
+            border-color: #D72638;
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <h1><i class="fas fa-play-circle"></i> PlayBox <span style="color:#D72638">REELS</span></h1>
+        <a href="index.html"><button class="exit-btn">Exit</button></a>
+    </div>
+
+    <!-- Reels Container -->
+    <div class="reels-container" id="reelsContainer">
+        <!-- Reels will be injected here -->
+    </div>
+
+    <script>
+        // Configuration
+        const MONETAG_LINK = 'https://otieu.com/4/10400619';
+
+        // Sample Data (can be replaced with localStorage or API)
+        const reels = [
+            {
+                id: 1,
+                title: 'Featured Reel',
+                description: 'Watch this amazing content!',
+                videoUrl: 'https://files.catbox.moe/tz0ez6.mp4'
+            },
+            // Add more reels by duplicating the above structure
+        ];
+
+        // Initialize
+        function initReels() {
+            const container = document.getElementById('reelsContainer');
+            
+            reels.forEach((reel, index) => {
+                const reelEl = createReelElement(reel, index);
+                container.appendChild(reelEl);
+            });
+
+            setupIntersectionObserver();
+        }
+
+        // Create Reel Element
+        function createReelElement(reel, index) {
+            const div = document.createElement('div');
+            div.className = 'reel';
+            div.setAttribute('data-index', index);
+
+            div.innerHTML = `
+                <video 
+                    src="${reel.videoUrl}" 
+                    loop 
+                    muted 
+                    playsinline
+                    class="reel-video"
+                    data-index="${index}"
+                ></video>
+
+                <div class="monetag-overlay" data-index="${index}">
+                    <div class="play-btn">
+                        <i class="fas fa-play"></i>
+                    </div>
+                    <div class="overlay-text">Tap to Watch & Unmute</div>
+                </div>
+
+                <div class="reel-info">
+                    <h2>${reel.title}</h2>
+                    <p>${reel.description || ''}</p>
+                </div>
+
+                <div class="side-actions">
+                    <div class="action-btn" onclick="handleLike(${reel.id})">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <div class="action-btn" onclick="handleDownload(${reel.id})">
+                        <i class="fas fa-download"></i>
+                    </div>
+                    <div class="action-btn" onclick="handleShare(${reel.id})">
+                        <i class="fas fa-share"></i>
+                    </div>
+                </div>
+            `;
+
+            // Add click handler to overlay
+            const overlay = div.querySelector('.monetag-overlay');
+            overlay.addEventListener('click', () => handleOverlayClick(index));
+
+            return div;
+        }
+
+        // Handle Overlay Click (Monetag)
+        function handleOverlayClick(index) {
+            // 1. Open Monetag Link
+            window.open(MONETAG_LINK, '_blank');
+
+            // 2. Hide Overlay
+            const overlay = document.querySelector(`.monetag-overlay[data-index="${index}"]`);
+            overlay.classList.add('hidden');
+
+            // 3. Unmute and Play Video
+            const video = document.querySelector(`.reel-video[data-index="${index}"]`);
+            video.muted = false;
+            video.play();
+        }
+
+        // Intersection Observer for Auto-Play
+        function setupIntersectionObserver() {
+            const options = {
+                root: null,
+                threshold: 0.7
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    const video = entry.target.querySelector('video');
+                    if (entry.isIntersecting) {
+                        video.play();
+                    } else {
+                        video.pause();
+                    }
+                });
+            }, options);
+
+            document.querySelectorAll('.reel').forEach(reel => {
+                observer.observe(reel);
+            });
+        }
+
+        // Action Handlers
+        function handleLike(id) {
+            alert('Liked Reel ' + id);
+        }
+
+        function handleDownload(id) {
+            // Trigger Monetag link as well
+            window.open(MONETAG_LINK, '_blank');
+            alert('Download initiated for Reel ' + id);
+        }
+
+        function handleShare(id) {
+            // Copy current URL to clipboard
+            navigator.clipboard.writeText(window.location.href);
+            alert('Link copied to clipboard!');
+        }
+
+        // Start
+        initReels();
+    </script>
+</body>
+</html>
