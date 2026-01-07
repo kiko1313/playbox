@@ -983,7 +983,12 @@
             // Check if it's a direct file link (mp4/webm) or YouTube
             const isDirectFile = video.src.match(/\.(mp4|webm|ogg)$/i);
 
-            if (video.type === 'youtube' || (!isDirectFile && (video.src.includes('youtube') || video.src.includes('youtu.be')))) {
+            // Check for Doodstream
+            if (video.src.includes('dood.') || video.src.includes('doodstream')) {
+                // Doodstream embed
+                // URLs like: https://dood.li/e/xxxxx or https://dood.watch/e/xxxxx
+                playerHtml = `<iframe src="${video.src}" frameborder="0" allowfullscreen allow="autoplay"></iframe>`;
+            } else if (video.type === 'youtube' || (!isDirectFile && (video.src.includes('youtube') || video.src.includes('youtu.be')))) {
                 const videoId = getYouTubeID(video.src);
                 if (videoId) {
                     // Removed complex parameters (origin, referrer) to fix local/file protocol playback issues
