@@ -716,6 +716,9 @@
             <a href="photos.html" class="btn-nav" style="display: inline-flex; align-items: center; gap: 8px;">
                 <i class="fas fa-images"></i> Photos
             </a>
+            <a href="videos.html" class="btn-nav" style="display: inline-flex; align-items: center; gap: 8px;">
+                <i class="fas fa-video"></i> Videos
+            </a>
             <button class="btn-nav" id="adminBtn" onclick="router('login')">
                 <i class="fas fa-user-shield"></i> Admin
             </button>
@@ -1166,15 +1169,19 @@
                 <!-- Upload Form -->
                 <div style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: var(--radius-sm); margin-bottom: 2rem;">
                     <h3 style="margin-bottom: 1rem;">Add New Video</h3>
+                    <p style="color: var(--text-muted); margin-bottom: 1rem; font-size: 0.9rem;">
+                        Paste YouTube, Doodstream embed, or direct MP4 link
+                    </p>
                     <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <input type="text" id="vidTitle" class="form-input" placeholder="Video Title">
                         <select id="vidType" class="form-input">
                             <option value="youtube">YouTube URL</option>
+                            <option value="doodstream">Doodstream Embed</option>
                             <option value="url">Direct Video Link (MP4/WebM)</option>
                         </select>
                     </div>
                     <div style="margin-top: 1rem;">
-                        <input type="text" id="vidUrl" class="form-input" placeholder="Paste YouTube Link or Video URL here...">
+                        <input type="text" id="vidUrl" class="form-input" placeholder="Paste URL here...">
                     </div>
                     <button class="btn-nav btn-primary" style="margin-top: 1rem;" onclick="uploadVideo()">Add Video</button>
                 </div>
