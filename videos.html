@@ -171,26 +171,37 @@
         function getPlayerHtml(video) {
             const src = video.src || video.url;
 
-            // Doodstream
-            if (src.includes('dood.') || src.includes('doodstream')) {
-                return `<iframe src="${src}" frameborder="0" allowfullscreen allow="autoplay"></iframe>`;
+            if (!src) {
+                return `<p style="padding: 40px; text-align: center; color: #999;">No video URL found</p>`;
+            }
+
+            console.log('Processing video URL:', src);
+
+            // Doodstream - check for various formats
+            if (src.toLowerCase().includes('dood')) {
+                console.log('Detected as Doodstream');
+                return `<iframe src="${src}" frameborder="0" allowfullscreen allow="autoplay" style="width:100%;height:100%;"></iframe>`;
             }
 
             // YouTube
             if (src.includes('youtube.com') || src.includes('youtu.be')) {
+                console.log('Detected as YouTube');
                 const videoId = getYouTubeID(src);
                 if (videoId) {
-                    return `<iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen allow="autoplay; encrypted-media"></iframe>`;
+                    return `<iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen allow="autoplay; encrypted-media" style="width:100%;height:100%;"></iframe>`;
                 }
             }
 
-            // Direct video file
-            if (src.match(/\.(mp4|webm|ogg)$/i)) {
-                return `<video src="${src}" controls></video>`;
+            // Direct video file (check extension OR assume it's a video link)
+            const lowerSrc = src.toLowerCase();
+            if (lowerSrc.match(/\.(mp4|webm|ogg|mov|avi)$/i) || src.includes('catbox.moe') || src.includes('video')) {
+                console.log('Detected as direct video');
+                return `<video src="${src}" controls style="width:100%;height:100%;"></video>`;
             }
 
-            // Fallback
-            return `<p style="padding: 40px; text-align: center; color: #999;">Unsupported video format</p>`;
+            // If nothing matched, try as iframe (for other embed services)
+            console.log('Unknown format, trying as iframe');
+            return `<iframe src="${src}" frameborder="0" allowfullscreen allow="autoplay" style="width:100%;height:100%;"></iframe>`;
         }
 
         // Extract YouTube ID
