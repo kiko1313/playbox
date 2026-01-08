@@ -194,8 +194,33 @@
         const MONETAG_LINK = 'https://otieu.com/4/10384328';
 
         // Load photos from localStorage (saved via admin panel)
-        const stored = localStorage.getItem('galleryPhotos');
-        const photos = stored ? JSON.parse(stored) : [];
+        let photos = [];
+        // Try unified storage first
+        const playboxStr = localStorage.getItem('playboxData');
+        if (playboxStr) {
+            try {
+                const playbox = JSON.parse(playboxStr);
+                if (Array.isArray(playbox.photos)) {
+                    photos = playbox.photos;
+                }
+            } catch (e) {
+                console.error('Failed to parse playboxData', e);
+            }
+        }
+        // Fallback to old key if needed
+        if (!photos.length) {
+            const old = localStorage.getItem('galleryPhotos');
+            if (old) {
+                try { photos = JSON.parse(old); } catch (e) { console.error('Parse error galleryPhotos', e); }
+            }
+        }
+        // If still empty, show placeholder message
+        if (!photos.length) {
+            document.getElementById('gallery').innerHTML = '<p style="color:#999; text-align:center;">No photos have been added yet. Use the admin panel to upload your gallery.</p>';
+        } else {
+            // Ensure both keys are in sync for future loads
+            localStorage.setItem('galleryPhotos', JSON.stringify(photos));
+        }
 
         // Render gallery with download button
         function renderGallery() {
