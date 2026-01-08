@@ -88,10 +88,14 @@
 
         .video-player {
             width: 100%;
+            max-width: 720px;
+            /* YouTube-style size */
             aspect-ratio: 16/9;
             background: #000;
             border-radius: 8px;
             overflow: hidden;
+            margin: 0 auto;
+            /* Center the player */
         }
 
         .video-player iframe,
@@ -99,6 +103,8 @@
             width: 100%;
             height: 100%;
             border: none;
+            pointer-events: auto;
+            /* Allow clicking on video */
         }
 
         .no-videos {
@@ -204,7 +210,7 @@
                 return `
                     <div class="video-item" data-index="${index}">
                         <h2 class="video-title">${video.title}</h2>
-                        <div class="video-player" onclick="handleVideoClick(event)">
+                        <div class="video-player">
                             ${playerHtml}
                         </div>
                     </div>
