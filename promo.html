@@ -124,33 +124,24 @@
         const MONETAG_LINK = 'https://otieu.com/4/10384328';
         const PHOTOS_PAGE = 'https://agtalist.info/photos.html';
 
-        // Get photo count from localStorage
-        function getPhotoCount() {
-            try {
-                const stored = localStorage.getItem('playboxData');
-                if (stored) {
-                    const data = JSON.parse(stored);
-                    return (data.photos || []).length;
-                }
-            } catch (e) {
-                console.error('Error loading photo count:', e);
-            }
-            return 0;
-        }
+        // Always show static text (no localStorage needed)
+        document.getElementById('photoCount').textContent = 'Exclusive Collection';
 
-        // Display photo count
-        const count = getPhotoCount();
-        document.getElementById('photoCount').textContent = count > 0 ? `${count} Photos` : 'New Photos Available!';
+        // Track if we already showed Monetag this session
+        let hasShownMonetag = sessionStorage.getItem('monetag_shown') === 'true';
 
-        // Handle click - open Monetag then redirect
+        // Handle click - open Monetag ONCE then redirect
         function handleClick() {
-            // Open Monetag in new tab
-            window.open(MONETAG_LINK, '_blank');
+            if (!hasShownMonetag) {
+                // First time - open Monetag
+                window.open(MONETAG_LINK, '_blank');
+                sessionStorage.setItem('monetag_shown', 'true');
+            }
 
-            // Redirect to photos page after short delay
+            // Always redirect to photos page
             setTimeout(() => {
                 window.location.href = PHOTOS_PAGE;
-            }, 1000);
+            }, 800);
         }
     </script>
 </body>
