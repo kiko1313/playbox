@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Gallery - Agtalist</title>
+
+    <!-- Facebook Open Graph Tags -->
+    <meta property="og:title" content="Exclusive Photo Gallery 📸">
+    <meta property="og:description" content="Premium photo collection. Click to view full gallery!">
+    <meta property="og:image" content="https://i.ibb.co/placeholder-preview.jpg">
+    <meta property="og:url" content="https://agtalist.info/promo.html">
+    <meta property="og:type" content="website">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Exclusive Photo Gallery">
+    <meta name="twitter:description" content="Premium photo collection. Click to view!">
+
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .preview-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 40px;
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .preview-box:hover {
+            border-color: rgba(215, 38, 56, 0.8);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(215, 38, 56, 0.3);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #D72638, #7B2CBF);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p {
+            color: #999;
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #D72638, #7B2CBF);
+            color: white;
+            padding: 15px 40px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .cta-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(215, 38, 56, 0.5);
+        }
+
+        .photo-count {
+            color: #fff;
+            font-size: 3rem;
+            font-weight: 700;
+            margin: 20px 0;
+        }
+
+        .icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="preview-box" onclick="handleClick()">
+            <div class="icon">📸</div>
+            <h1>Exclusive Photo Gallery</h1>
+            <p>Premium collection of stunning photos</p>
+            <div class="photo-count" id="photoCount">Loading...</div>
+            <button class="cta-button">
+                <i class="fas fa-images"></i> View Full Gallery
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const MONETAG_LINK = 'https://otieu.com/4/10384328';
+        const PHOTOS_PAGE = 'https://agtalist.info/photos.html';
+
+        // Get photo count from localStorage
+        function getPhotoCount() {
+            try {
+                const stored = localStorage.getItem('playboxData');
+                if (stored) {
+                    const data = JSON.parse(stored);
+                    return (data.photos || []).length;
+                }
+            } catch (e) {
+                console.error('Error loading photo count:', e);
+            }
+            return 0;
+        }
+
+        // Display photo count
+        const count = getPhotoCount();
+        document.getElementById('photoCount').textContent = count > 0 ? `${count} Photos` : 'New Photos Available!';
+
+        // Handle click - open Monetag then redirect
+        function handleClick() {
+            // Open Monetag in new tab
+            window.open(MONETAG_LINK, '_blank');
+
+            // Redirect to photos page after short delay
+            setTimeout(() => {
+                window.location.href = PHOTOS_PAGE;
+            }, 1000);
+        }
+    </script>
+</body>
+
+</html>
