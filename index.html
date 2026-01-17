@@ -739,7 +739,8 @@
             activeVideo: null,
             data: {
                 videos: [],
-                files: []
+                files: [],
+                smartLinkUrl: '' // Global Smart Link URL
             }
         };
 
@@ -748,6 +749,8 @@
             const storedData = localStorage.getItem('playboxData');
             if (storedData) {
                 state.data = JSON.parse(storedData);
+                // Schema Migration for existing data
+                if (!state.data.smartLinkUrl) state.data.smartLinkUrl = '';
             } else {
                 // Default Data
                 state.data = {
@@ -761,7 +764,8 @@
                         { id: 1, title: 'VLC Media Player', type: 'link', url: 'https://www.videolan.org/vlc/', desc: 'Best open source video player' },
                         { id: 2, title: 'Adobe Premiere Pro', type: 'link', url: '#', desc: 'Professional video editing software' },
                         { id: 3, title: 'PlayBox Guide.pdf', type: 'file', url: '#', desc: 'User manual for the platform' }
-                    ]
+                    ],
+                    smartLinkUrl: '' // Default empty
                 };
                 saveData();
             }
@@ -786,6 +790,35 @@
                 toast.style.opacity = '0';
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
+        }
+
+        // --- SMART LINK HANDLER ---
+        function openSmartLink(targetUrl) {
+            const adUrl = state.data.smartLinkUrl;
+            // Cooldown in milliseconds (e.g., 30 minutes = 30 * 60 * 1000)
+            const AD_COOLDOWN = 30 * 60 * 1000;
+            const lastClick = localStorage.getItem('playbox_last_ad_click');
+            const now = Date.now();
+
+            if (adUrl && adUrl.startsWith('http')) {
+                // Check if we are within the cooldown period
+                if (!lastClick || (now - parseInt(lastClick)) > AD_COOLDOWN) {
+                    // Time to show the ad
+                    window.open(adUrl, '_blank');
+                    localStorage.setItem('playbox_last_ad_click', now.toString()); // Update timestamp
+
+                    // Open Content in Current Tab (or new tab if preferred) after a slight delay
+                    setTimeout(() => {
+                        window.open(targetUrl, '_blank');
+                    }, 100);
+                } else {
+                    // In cooldown period, just open content directly
+                    window.open(targetUrl, '_blank');
+                }
+            } else {
+                // No Ad Configured, just open content
+                window.open(targetUrl, '_blank');
+            }
         }
 
         // --- ROUTING & RENDERING ---
@@ -822,6 +855,27 @@
             // In a real scenario, you would call the ad loader function here.
         }
 
+        // --- HELPER: THUMBNAIL GENERATOR ---
+        function getThumbnailHtml(video) {
+            const youtubeId = getYouTubeID(video.src);
+
+            if (youtubeId) {
+                // YouTube Thumbnail
+                return `
+                    <img src="https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg" class="thumbnail-img" alt="${video.title}" onerror="this.src='https://picsum.photos/seed/${video.id}/400/225'">
+                    <div class="play-icon-overlay"><i class="fas fa-play"></i></div>
+                `;
+            } else {
+                // Direct Video File (URL)
+                // Use a generic placeholder or the video itself if possible without breaking layout
+                // Falling back to a safe placeholder to ensure no "empty boxes"
+                return `
+                    <img src="https://picsum.photos/seed/${video.id}/400/225" class="thumbnail-img" alt="${video.title}">
+                    <div class="play-icon-overlay"><i class="fas fa-play"></i></div>
+                `;
+            }
+        }
+
         // --- VIEW: VISITOR PAGE ---
         function renderVisitor(container) {
             const layout = document.createElement('div');
@@ -833,14 +887,17 @@
 
             // Generate File/Links List
             let fileListHtml = state.data.files.map(file => `
-                <div class="file-link-card" onclick="window.open('${file.url}', '_blank')">
-                    <div class="file-link-icon">
+                <div class="file-link-card">
+                    <div class="file-link-icon" onclick="openSmartLink('${file.url}')">
                         <i class="fas ${file.type === 'file' ? 'fa-file-download' : 'fa-external-link-alt'}"></i>
                     </div>
-                    <div class="file-link-info">
+                    <div class="file-link-info" onclick="openSmartLink('${file.url}')" style="flex:1;">
                         <h4>${file.title}</h4>
                         <span>${file.desc}</span>
                     </div>
+                    <button class="btn-nav" style="padding: 0.3rem 0.8rem; font-size: 0.8rem; background: rgba(255,255,255,0.1);" onclick="openSmartLink('${file.url}')">
+                        <i class="fas fa-download"></i>
+                    </button>
                 </div>
             `).join('');
 
@@ -866,8 +923,7 @@
             let videoGridHtml = state.data.videos.map(video => `
                 <div class="video-card" onclick="openVideo(${video.id})">
                     <div class="thumbnail-container">
-                        <img src="https://img.youtube.com/vi/${getYouTubeID(video.src)}/maxresdefault.jpg" class="thumbnail-img" alt="${video.title}" onerror="this.src='https://picsum.photos/seed/${video.id}/400/225'">
-                        <div class="play-icon-overlay"><i class="fas fa-play"></i></div>
+                        ${getThumbnailHtml(video)}
                     </div>
                     <div class="video-info">
                         <h3>${video.title}</h3>
@@ -919,11 +975,27 @@
 
             let playerHtml = '';
 
-            if (video.type === 'youtube') {
+            // Check if it's a direct file link (mp4/webm) or YouTube
+            const isDirectFile = video.src.match(/\.(mp4|webm|ogg)$/i);
+
+            if (video.type === 'youtube' || (!isDirectFile && (video.src.includes('youtube') || video.src.includes('youtu.be')))) {
                 const videoId = getYouTubeID(video.src);
-                playerHtml = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+                if (videoId) {
+                    // Removed complex parameters (origin, referrer) to fix local/file protocol playback issues
+                    // Using standard embed format which is most robust for local testing
+                    playerHtml = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+                } else {
+                    playerHtml = `
+                        <div style="height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#ff3b30; text-align:center; padding:1rem;">
+                            <i class="fas fa-exclamation-triangle fa-3x" style="margin-bottom:1rem;"></i>
+                            <h3>Invalid Video URL</h3>
+                            <p>Could not extract ID from: ${video.src}</p>
+                            <p style="font-size:0.8rem; margin-top:0.5rem; color:#ccc;">Please use a standard YouTube link (e.g., youtube.com/watch?v=... or youtube.com/shorts/...)</p>
+                        </div>
+                    `;
+                }
             } else {
-                // For local PC files (Blob URL)
+                // Direct File
                 playerHtml = `<video src="${video.src}" controls autoplay controlsList="nodownload"></video>`;
             }
 
@@ -937,7 +1009,10 @@
                     </div>
                     <div class="video-details">
                         <h1>${video.title}</h1>
-                        <div class="video-meta" style="margin: 0.5rem 0 1rem 0;">${video.views} views • ${video.date}</div>
+                        <div class="video-meta" style="margin: 0.5rem 0 1rem 0;">
+                            ${video.views} views • ${video.date}
+                            <span style="display:inline-block; margin-left:15px; font-family:monospace; background:#333; padding:2px 6px; border-radius:4px; font-size:0.75rem; color:#aaa;">ID: ${video.type === 'youtube' || video.src.includes('youtu') ? (getYouTubeID(video.src) || 'N/A') : 'Local'}</span>
+                        </div>
                         <div class="video-actions">
                             <button class="btn-nav"><i class="fas fa-thumbs-up"></i> Like</button>
                             <button class="btn-nav"><i class="fas fa-share"></i> Share</button>
@@ -949,7 +1024,7 @@
                         </p>
                     </div>
                     <!-- MONETAG AD SLOT: Under Video -->
-                    <div style="margin-top: 2rem; height: 90px; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center;">AD BANNER</div>
+                    <div id="monetag-videounder" style="margin-top: 2rem; height: 90px; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center;">AD BANNER SPACE</div>
                 </div>
 
                 <div class="player-sidebar">
@@ -957,8 +1032,8 @@
                         <h3>Up Next</h3>
                         ${state.data.videos.filter(v => v.id !== video.id).slice(0, 5).map(v => `
                             <div class="file-link-card" onclick="openVideo(${v.id})">
-                                <div style="width: 120px; height: 68px; border-radius: 6px; overflow: hidden;">
-                                    <img src="https://img.youtube.com/vi/${getYouTubeID(v.src)}/mqdefault.jpg" style="width:100%; height:100%; object-fit:cover;">
+                                <div style="width: 120px; height: 68px; border-radius: 6px; overflow: hidden; position: relative;">
+                                    ${getThumbnailHtml(v)}
                                 </div>
                                 <div class="file-link-info">
                                     <h4 style="font-size: 0.9rem;">${v.title}</h4>
@@ -1034,6 +1109,7 @@
                     <aside class="admin-menu">
                         <button class="active" onclick="switchAdminTab('videos', this)"><i class="fas fa-video"></i> Manage Videos</button>
                         <button onclick="switchAdminTab('files', this)"><i class="fas fa-folder"></i> Manage Files & Links</button>
+                        <button onclick="switchAdminTab('ads', this)"><i class="fas fa-dollar-sign"></i> Smart Link Settings</button>
                     </aside>
                     
                     <main class="admin-content" id="adminPanelContent">
@@ -1052,6 +1128,7 @@
 
             if (tab === 'videos') renderAdminVideos();
             if (tab === 'files') renderAdminFiles();
+            if (tab === 'ads') renderAdminAds();
         }
 
         // --- ADMIN: VIDEO MANAGER ---
@@ -1079,16 +1156,15 @@
                     <h3 style="margin-bottom: 1rem;">Add New Video</h3>
                     <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <input type="text" id="vidTitle" class="form-input" placeholder="Video Title">
-                        <select id="vidType" class="form-input" onchange="toggleVideoInput()">
+                        <select id="vidType" class="form-input">
                             <option value="youtube">YouTube URL</option>
-                            <option value="pc">Direct Video Link (MP4/WebM)</option>
+                            <option value="url">Direct Video Link (MP4/WebM)</option>
                         </select>
                     </div>
                     <div style="margin-top: 1rem;">
-                        <input type="text" id="vidUrl" class="form-input" placeholder="Paste YouTube Link here...">
-                        <input type="text" id="vidFile" class="form-input hidden" placeholder="Paste Direct Video Link (e.g. from file host)...">
+                        <input type="text" id="vidUrl" class="form-input" placeholder="Paste YouTube Link or Video URL here...">
                     </div>
-                    <button class="btn-nav btn-primary" style="margin-top: 1rem;" onclick="uploadVideo()">Upload Video</button>
+                    <button class="btn-nav btn-primary" style="margin-top: 1rem;" onclick="uploadVideo()">Add Video</button>
                 </div>
 
                 <table class="data-table">
@@ -1106,52 +1182,29 @@
         }
 
         function toggleVideoInput() {
-            const type = document.getElementById('vidType').value;
-            const urlInput = document.getElementById('vidUrl');
-            const fileInput = document.getElementById('vidFile');
-
-            if (type === 'youtube') {
-                urlInput.classList.remove('hidden');
-                fileInput.classList.add('hidden');
-            } else {
-                urlInput.classList.add('hidden');
-                fileInput.classList.remove('hidden');
-            }
+            // Deprecated function - logic removed for simplicity as PC upload is gone
         }
 
         function uploadVideo() {
             const title = document.getElementById('vidTitle').value;
             const type = document.getElementById('vidType').value;
+            const url = document.getElementById('vidUrl').value;
 
             if (!title) return showToast('Please enter a title', 'error');
-
-            let src = '';
-
-            if (type === 'youtube') {
-                const url = document.getElementById('vidUrl').value;
-                if (!url) return showToast('Please enter a YouTube URL', 'error');
-                src = url;
-            } else {
-                const fileInput = document.getElementById('vidFile');
-                const url = fileInput.value;
-                if (!url) return showToast('Please enter a video URL', 'error');
-
-                // Use Direct Link
-                src = url;
-            }
+            if (!url) return showToast('Please enter the URL', 'error');
 
             const newVideo = {
                 id: Date.now(),
                 title: title,
                 type: type,
-                src: src,
+                src: url,
                 views: '0',
                 date: 'Just now'
             };
 
             state.data.videos.unshift(newVideo);
             saveData();
-            showToast('Video uploaded successfully');
+            showToast('Video added successfully');
             renderAdminVideos(); // Refresh list
         }
 
@@ -1190,7 +1243,7 @@
                         <input type="text" id="fileTitle" class="form-input" placeholder="Title (e.g. Photoshop)">
                         <select id="fileType" class="form-input">
                             <option value="link">External Link</option>
-                            <option value="file">Downloadable File</option>
+                            <option value="file">Downloadable File (URL)</option>
                         </select>
                     </div>
                     <div class="grid" style="grid-template-columns: 2fr 1fr; gap: 1rem; margin-top: 1rem;">
@@ -1214,17 +1267,22 @@
             `;
         }
 
+        function toggleFileInput() {
+            // Deprecated
+        }
+
         function uploadFile() {
             const title = document.getElementById('fileTitle').value;
-            const type = document.getElementById('fileType').value;
-            const url = document.getElementById('fileUrl').value;
+            const typeInput = document.getElementById('fileType').value;
             const desc = document.getElementById('fileDesc').value;
+            const url = document.getElementById('fileUrl').value;
 
-            if (!title || !url) return showToast('Please fill in title and url', 'error');
+            if (!title) return showToast('Please fill in title', 'error');
+            if (!url) return showToast('Please fill in url', 'error');
 
             const newFile = {
                 id: Date.now(),
-                title, type, url, desc
+                title, type: typeInput, url, desc
             };
 
             state.data.files.unshift(newFile);
@@ -1242,11 +1300,269 @@
             }
         }
 
-        // --- HELPER: YOUTUBE ID EXTRACTOR ---
+        // --- ADMIN: ADS SETTINGS ---
+        function renderAdminAds() {
+            const content = document.getElementById('adminPanelContent');
+
+            content.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2>Monetization Settings</h2>
+                </div>
+                
+                <div style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: var(--radius-sm); margin-bottom: 2rem;">
+                    <h3 style="margin-bottom: 1rem;">Smart Link Configuration</h3>
+                    <p style="color: var(--text-muted); margin-bottom: 1rem; font-size: 0.9rem;">
+                        This link will open in a new tab whenever a user clicks on a File or Download button.
+                    </p>
+                    <div class="form-group">
+                        <label>Monetag Smart Link / Direct Link URL</label>
+                        <input type="text" id="smartLinkUrl" class="form-input" placeholder="https://..." value="${state.data.smartLinkUrl || ''}">
+                    </div>
+                    <button class="btn-nav btn-primary" onclick="saveSmartLink()">Save Settings</button>
+                </div>
+            `;
+        }
+
+        function saveSmartLink() {
+            const url = document.getElementById('smartLinkUrl').value;
+            state.data.smartLinkUrl = url;
+            saveData();
+            showToast('Smart Link URL updated!');
+        }
+
+        // --- HELPER: YOUTUBE ID EXTRACTOR (Architect Grade) ---
         function getYouTubeID(url) {
-            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-            const match = url.match(regExp);
-            return (match && match[2].length === 11) ? match[2] : null;
+            if (!url) return null;
+            try {
+                // Handle standard full URLs with URL API
+                if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                    const urlObj = new URL(url.startsWith('http') ? url : `https://${url}`);
+
+                    // Case 1: Shorts (youtube.com/shorts/ID)
+                    if (urlObj.pathname.includes('/shorts/')) {
+                        const parts = urlObj.pathname.split('/');
+                        return parts[parts.indexOf('shorts') + 1] || null;
+                    }
+
+                    // Case 2: Live (youtube.com/live/ID)
+                    if (urlObj.pathname.includes('/live/')) {
+                        const parts = urlObj.pathname.split('/');
+                        return parts[parts.indexOf('live') + 1] || null;
+                    }
+
+                    // Case 3: Standard watch (youtube.com/watch?v=ID)
+                    if (urlObj.searchParams.has('v')) {
+                        return urlObj.searchParams.get('v');
+                    }
+
+                    // Case 4: Shortened (youtu.be/ID)
+                    if (urlObj.hostname === 'youtu.be') {
+                        return urlObj.pathname.slice(1); // remove leading slash
+                    }
+
+                    // Case 5: Embed (youtube.com/embed/ID)
+                    if (urlObj.pathname.includes('/embed/')) {
+                        const parts = urlObj.pathname.split('/');
+                        return parts[parts.indexOf('embed') + 1] || null;
+                    }
+                }
+            } catch (e) {
+                // Fallback for partial/malformed URLs
+                // Regex for Standard, Shorts, Live, Shortened, and Embeds
+                const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/|live\/)([^#&?\/]*).*/;
+                const match = url.match(regExp);
+                return (match && match[2] && match[2].length >= 10) ? match[2] : null;
+            }
+            return null;
+        }
+
+        // --- HELPER: THUMBNAIL GENERATOR (Premium) ---
+        function getThumbnailHtml(video) {
+            const youtubeId = getYouTubeID(video.src);
+
+            if (youtubeId) {
+                // YouTube: High Resolution Thumbnail
+                return `
+                    <div class="video-preview-wrapper" style="position:relative; width:100%; height:100%;">
+                        <img src="https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg" 
+                             class="thumbnail-img" 
+                             alt="${video.title}" 
+                             onerror="this.src='https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg'"> <!-- Fallback to HQ if maxres (404) fails -->
+                        <div class="play-icon-overlay"><i class="fas fa-play"></i></div>
+                    </div>
+                `;
+            } else {
+                // Direct File: Live Preview
+                // We render a muted video tag that plays on hover
+                return `
+                    <div class="video-preview-wrapper" style="position:relative; width:100%; height:100%; background:#000;">
+                        <video 
+                            src="${video.src}#t=0.1" 
+                            class="thumbnail-img" 
+                            muted 
+                            playsinline 
+                            loop 
+                            preload="metadata"
+                            style="object-fit:cover; width:100%; height:100%;"
+                            onmouseover="this.play()" 
+                            onmouseout="this.pause(); this.currentTime=0.1;"
+                        ></video>
+                        <div class="play-icon-overlay"><i class="fas fa-play"></i></div>
+                    </div>
+                `;
+            }
+        }
+
+        // --- GLOBAL YOUTUBE API SETUP ---
+        let player; // Global player instance
+        function onYouTubeIframeAPIReady() {
+            console.log('YouTube API Ready');
+        }
+
+        // --- VIEW: PLAYER PAGE (Architect Version) ---
+        function openVideo(id) {
+            const video = state.data.videos.find(v => v.id === id);
+            if (video) router('player', video);
+        }
+
+        function renderPlayer(container, video) {
+            container.style.marginLeft = '0'; // Full width
+            container.style.paddingTop = '70px';
+
+            const layout = document.createElement('div');
+            layout.className = 'player-container';
+            layout.innerHTML = `
+                <div class="player-wrapper">
+                    <div class="video-frame">
+                        <div id="video-player-target"></div>
+                    </div>
+                    <div class="video-details">
+                        <h1>${video.title}</h1>
+                        <div class="video-meta" style="margin: 0.5rem 0 1rem 0;">
+                            ${video.views} views • ${video.date}
+                            <span id="player-status-badge" style="display:none; margin-left:15px; font-family:monospace; background:#333; padding:2px 6px; border-radius:4px; font-size:0.75rem; color:#aaa;">Initializing...</span>
+                        </div>
+                        <div class="video-actions">
+                            <button class="btn-nav"><i class="fas fa-thumbs-up"></i> Like</button>
+                            <button class="btn-nav"><i class="fas fa-share"></i> Share</button>
+                            <button class="btn-nav" onclick="router('visitor')"><i class="fas fa-arrow-left"></i> Back to Browse</button>
+                        </div>
+                        <p style="margin-top: 1rem; color: #ccc; line-height: 1.6;">
+                            This is a premium viewing experience on PlayBox. Enjoy high-quality streaming without interruptions. 
+                        </p>
+                    </div>
+                    <!-- MONETAG AD SLOT: Under Video -->
+                    <div id="monetag-videounder" style="margin-top: 2rem; height: 90px; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center;">AD BANNER SPACE</div>
+                </div>
+
+                <div class="player-sidebar">
+                    <div class="sidebar-section">
+                        <h3>Up Next</h3>
+                        ${state.data.videos.filter(v => v.id !== video.id).slice(0, 5).map(v => `
+                            <div class="file-link-card" onclick="openVideo(${v.id})">
+                                <div style="width: 120px; height: 68px; border-radius: 6px; overflow: hidden; position: relative;">
+                                    ${getThumbnailHtml(v)}
+                                </div>
+                                <div class="file-link-info">
+                                    <h4 style="font-size: 0.9rem;">${v.title}</h4>
+                                    <span>${v.views}</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            container.appendChild(layout);
+
+            // --- PLAYER INITIALIZATION LOGIC ---
+            const videoId = getYouTubeID(video.src);
+            const isYouTube = !!videoId;
+            const target = document.getElementById('video-player-target');
+            const statusBadge = document.getElementById('player-status-badge');
+
+            if (isYouTube) {
+                // Initialize YouTube Player
+                statusBadge.style.display = 'inline-block';
+                statusBadge.textContent = 'Loading API... ' + videoId;
+
+                // Ensure API is loaded
+                if (!window.YT) {
+                    const tag = document.createElement('script');
+                    tag.src = "https://www.youtube.com/iframe_api";
+                    const firstScriptTag = document.getElementsByTagName('script')[0];
+                    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+                    // Wait for it
+                    window.onYouTubeIframeAPIReady = () => {
+                        createYTPlayer(videoId);
+                    };
+                } else {
+                    createYTPlayer(videoId);
+                }
+            } else {
+                // Direct Video File
+                target.innerHTML = `<video src="${video.src}" controls autoplay style="width:100%; height:100%; border-radius: inherit;"></video>`;
+            }
+
+            function createYTPlayer(id) {
+                statusBadge.textContent = 'Player Ready: ' + id;
+                try {
+                    player = new YT.Player('video-player-target', {
+                        height: '100%',
+                        width: '100%',
+                        videoId: id,
+                        playerVars: {
+                            'playsinline': 1,
+                            'autoplay': 1,
+                            'rel': 0
+                        },
+                        events: {
+                            'onReady': onPlayerReady,
+                            'onStateChange': onPlayerStateChange,
+                            'onError': onPlayerError
+                        }
+                    });
+                } catch (e) {
+                    statusBadge.textContent = 'API Error: ' + e.message;
+                    showToast('Critical Player Error', 'error');
+                }
+            }
+
+            function onPlayerReady(event) {
+                event.target.playVideo();
+                statusBadge.style.color = '#2ecc71'; // Green
+                statusBadge.textContent = 'Playing: ' + videoId;
+            }
+
+            function onPlayerStateChange(event) {
+                // -1 (unstarted), 0 (ended), 1 (playing), 2 (paused), 3 (buffering), 5 (video cued)
+                if (event.data == yt.PlayerState.PLAYING) {
+                    // Ad logic could go here
+                }
+            }
+
+            function onPlayerError(event) {
+                const errorMap = {
+                    2: 'Invalid Parameter',
+                    5: 'HTML5 Error',
+                    100: 'Video Not Found (Removed/Private)',
+                    101: 'Playback Not Allowed (Embedded Disabled)',
+                    150: 'Playback Not Allowed (Embedded Disabled)'
+                };
+                const msg = errorMap[event.data] || 'Unknown Error';
+                statusBadge.style.color = '#e74c3c'; // Red
+                statusBadge.textContent = 'Error: ' + msg;
+
+                // Show user friendly UI
+                document.getElementById('video-player-target').innerHTML = `
+                    <div style="height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#ff3b30; text-align:center; padding:1rem;">
+                        <i class="fas fa-exclamation-circle fa-3x" style="margin-bottom:1rem;"></i>
+                        <h3>Playback Error</h3>
+                        <p>${msg}</p>
+                        <p style="font-size:0.8rem; margin-top:0.5rem; color:#ccc;">ID: ${videoId}</p>
+                    </div>
+                `;
+            }
         }
 
         // --- INIT ---
@@ -1261,6 +1577,7 @@
                     .catch(err => console.error('Service Worker failed', err));
             }
         });
+
 
     </script>
 </body>
