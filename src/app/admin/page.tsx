@@ -85,6 +85,15 @@ function LoginForm() {
 function AdminDashboard() {
     const [tab, setTab] = useState<'videos' | 'files' | 'settings'>('videos');
 
+    useEffect(() => {
+        const user = auth.currentUser;
+        if (user) {
+            user.getIdTokenResult().then((res: any) => {
+                console.log("Current user claims:", res.claims);
+            });
+        }
+    }, []);
+
     return (
         <div className="dashboard-container">
             <div className="sidebar">
