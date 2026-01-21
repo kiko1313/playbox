@@ -1,0 +1,123 @@
+:root {
+  /* Palette: Raspberry to Violet */
+  --color-raspberry: #D72638;
+  --color-raspberry-dark: #a81b2a;
+  --color-violet: #7B2CBF;
+  --color-violet-light: #9D4EDD;
+
+  /* User Requested Colors (Strict) */
+  --color-primary: #F22BB9;
+  --color-accent: #6F1249;
+  --color-text-primary: #0F0E0F;
+  /* Used on light bg? Or is background #0F0E0F? */
+  /* Re-reading request: "Background: #0F0E0F", "Text Primary: #0F0E0F" -- Wait, text same as bg? likely typo in request or refers to text on LIGHT bg. But theme is dark.
+     Old theme was: --bg-dark: #0f0f13; --text-main: #ffffff;
+     New request: "Background: #0F0E0F" (Very Dark). "Text Primary: #0F0E0F" (This must be a mistake, text invisible).
+     I will assume Text Primary is WHITE #FFFFFF or similar high contrast on #0F0E0F.
+     Wait, "Link: #6F1249".
+     Let's stick to the high contrast dark mode logic but use the requested Primary #F22BB9.
+  */
+
+  /* Revised Palette based on Request + Common Sense */
+  --bg-dark: #0F0E0F;
+  --bg-card: #1a1a20;
+  /* Slightly lighter for cards */
+  --bg-panel: #25252e;
+
+  --text-main: #ffffff;
+  --text-muted: #a0a0b0;
+
+  --primary: #F22BB9;
+  --accent: #6F1249;
+
+  --border-color: rgba(255, 255, 255, 0.1);
+
+  /* Gradients & Effects */
+  --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  --glow-shadow: 0 4px 30px rgba(242, 43, 185, 0.3);
+
+  /* Spacing & Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  /* Request: "12px on cards" */
+  --radius-lg: 24px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  outline: none;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  /* Request: "Primary Font: Poppins" */
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  overflow-x: hidden;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+  transition: 0.3s;
+}
+
+ul {
+  list-style: none;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+}
+
+/* Utilities matches old system for ease of porting */
+.hidden {
+  display: none !important;
+}
+
+.flex {
+  display: flex;
+}
+
+.grid {
+  display: grid;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.rounded-xl {
+  border-radius: var(--radius-md);
+}
+
+/* Using theme radius */
+
+.text-gradient {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Layout */
+.main-container {
+  padding-top: 70px;
+  /* Offset for fixed navbar */
+  min-height: 100vh;
+}
