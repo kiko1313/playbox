@@ -86,35 +86,47 @@ function AdminDashboard() {
     const [tab, setTab] = useState<'videos' | 'files' | 'settings'>('videos');
 
     return (
-        <div className="dashboard-container">
-            <div className="sidebar">
-                <h3>Dashboard</h3>
-                <nav>
-                    <button className={`nav-btn ${tab === 'videos' ? 'active' : ''}`} onClick={() => setTab('videos')}>
-                        <VideoIcon size={18} /> Manage Videos
-                    </button>
-                    <button className={`nav-btn ${tab === 'files' ? 'active' : ''}`} onClick={() => setTab('files')}>
-                        <FileText size={18} /> Manage Files
-                    </button>
-                    <button className={`nav-btn ${tab === 'settings' ? 'active' : ''}`} onClick={() => setTab('settings')}>
-                        <Settings size={18} /> Settings
-                    </button>
-                </nav>
+        <div className="page-container">
+            <div className="header-section">
+                <h1>Admin <span className="text-gradient">Dashboard</span></h1>
+                <p className="subtitle">Manage content and monetization settings.</p>
             </div>
-            <main className="content">
+
+            <div className="admin-tabs">
+                <button className={`tab-btn ${tab === 'videos' ? 'active' : ''}`} onClick={() => setTab('videos')}>
+                    <VideoIcon size={18} /> Videos
+                </button>
+                <button className={`tab-btn ${tab === 'files' ? 'active' : ''}`} onClick={() => setTab('files')}>
+                    <FileText size={18} /> Files
+                </button>
+                <button className={`tab-btn ${tab === 'settings' ? 'active' : ''}`} onClick={() => setTab('settings')}>
+                    <Settings size={18} /> Settings
+                </button>
+            </div>
+
+            <main className="admin-content">
                 {tab === 'videos' && <VideosManager />}
                 {tab === 'files' && <FilesManager />}
                 {tab === 'settings' && <SettingsManager />}
             </main>
 
             <style jsx>{`
-        .dashboard-container { display: grid; grid-template-columns: 250px 1fr; gap: 2rem; max-width: 1400px; margin: 0 auto; padding: 2rem; }
-        .sidebar { background: var(--bg-panel); padding: 1.5rem; border-radius: 12px; height: fit-content; }
-        .sidebar h3 { margin-bottom: 1.5rem; color: var(--text-muted); }
-        .nav-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 1rem; background: transparent; color: var(--text-muted); text-align: left; border-radius: 8px; transition: 0.2s; }
-        .nav-btn:hover, .nav-btn.active { background: var(--gradient-primary); color: white; }
-        .content { background: var(--bg-panel); padding: 2rem; border-radius: 12px; min-height: 600px; }
-        @media (max-width: 768px) { .dashboard-container { grid-template-columns: 1fr; } }
+        .page-container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .header-section { text-align: center; margin-bottom: 3rem; }
+        .header-section h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .subtitle { color: var(--text-muted); font-size: 1.1rem; }
+        
+        .admin-tabs { display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; justify-content: center; }
+        .tab-btn { display: flex; align-items: center; gap: 8px; padding: 0.8rem 1.5rem; background: rgba(255,255,255,0.05); color: var(--text-muted); border-radius: 8px; transition: 0.3s; font-weight: 500; }
+        .tab-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+        .tab-btn.active { background: var(--gradient-primary); color: white; }
+        
+        .admin-content { background: var(--bg-panel); padding: 2rem; border-radius: 12px; min-height: 400px; border: 1px solid var(--border-color); }
+        
+        @media (max-width: 768px) { 
+            .admin-tabs { flex-wrap: wrap; }
+            .tab-btn { flex: 1; justify-content: center; padding: 0.6rem; font-size: 0.9rem; }
+        }
       `}</style>
         </div>
     );
