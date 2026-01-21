@@ -299,8 +299,13 @@ function SettingsManager() {
     }, []);
 
     const handleSave = async () => {
-        await setDoc(doc(db, 'settings', 'ads'), { smartLinkUrl: smartLink }, { merge: true });
-        alert('Saved');
+        try {
+            await setDoc(doc(db, 'settings', 'ads'), { smartLinkUrl: smartLink }, { merge: true });
+            alert('Settings saved successfully!');
+        } catch (error: any) {
+            console.error('Error saving settings:', error);
+            alert('Error saving settings: ' + error.message);
+        }
     };
 
     return (
@@ -309,7 +314,7 @@ function SettingsManager() {
             <div className="add-box">
                 <label style={{ marginBottom: '0.5rem', display: 'block' }}>Smart Link URL</label>
                 <input className="input full" value={smartLink} onChange={e => setSmartLink(e.target.value)} />
-                <button className="btn btn-primary" onClick={handleSave}>Save Settings</button>
+                <button type="button" className="btn btn-primary" onClick={handleSave}>Save Settings</button>
             </div>
             <style jsx>{`
          .add-box { background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 8px; }
