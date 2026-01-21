@@ -60,7 +60,7 @@
   }
 
   50% {
-    box-shadow: inset 0 0 55px 20px rgba(0, 102, 255, 0.9);
+    box-shadow: inset 0 0 60px 20px rgba(0, 102, 255, 0.9);
   }
 }
 
@@ -141,4 +141,16 @@ button {
   padding-top: 70px;
   /* Offset for fixed navbar */
   min-height: 100vh;
+}
+
+/* Navbar Polish - Force Glassmorphism Parity */
+.navbar {
+  background: rgba(15, 14, 15, 0.9) !important;
+  backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.nav-item.active {
+  background: var(--gradient-primary) !important;
+  box-shadow: 0 4px 15px rgba(242, 43, 185, 0.4) !important;
 }
