@@ -85,15 +85,6 @@ function LoginForm() {
 function AdminDashboard() {
     const [tab, setTab] = useState<'videos' | 'files' | 'settings'>('videos');
 
-    useEffect(() => {
-        const user = auth.currentUser;
-        if (user) {
-            user.getIdTokenResult().then((res: any) => {
-                console.log("Current user claims:", res.claims);
-            });
-        }
-    }, []);
-
     return (
         <div className="dashboard-container">
             <div className="sidebar">
@@ -308,12 +299,14 @@ function SettingsManager() {
     }, []);
 
     const handleSave = async () => {
+        if (!db) return alert('Database connection not ready');
         try {
-            await setDoc(doc(db, 'settings', 'ads'), { smartLinkUrl: smartLink }, { merge: true });
+            const docRef = doc(db, 'settings', 'ads');
+            await setDoc(docRef, { smartLinkUrl: smartLink }, { merge: true });
             alert('Settings saved successfully!');
         } catch (error: any) {
-            console.error('Error saving settings:', error);
-            alert('Error saving settings: ' + error.message);
+            console.error('Save failed:', error);
+            alert('Error: ' + error.message);
         }
     };
 
