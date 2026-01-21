@@ -23,6 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={poppins.className}>
+        <div className="glow-viewport" />
         <NavBar />
         <main className="main-container">
           {children}
