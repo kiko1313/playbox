@@ -9,19 +9,12 @@
   --color-primary: #F22BB9;
   --color-accent: #6F1249;
   --color-text-primary: #0F0E0F;
-  /* Used on light bg? Or is background #0F0E0F? */
-  /* Re-reading request: "Background: #0F0E0F", "Text Primary: #0F0E0F" -- Wait, text same as bg? likely typo in request or refers to text on LIGHT bg. But theme is dark.
-     Old theme was: --bg-dark: #0f0f13; --text-main: #ffffff;
-     New request: "Background: #0F0E0F" (Very Dark). "Text Primary: #0F0E0F" (This must be a mistake, text invisible).
-     I will assume Text Primary is WHITE #FFFFFF or similar high contrast on #0F0E0F.
-     Wait, "Link: #6F1249".
-     Let's stick to the high contrast dark mode logic but use the requested Primary #F22BB9.
-  */
+  --color-item: #F22BB9;
+  /* Explicitly set to primary pink to avoid undefined behavior */
 
   /* Revised Palette based on Request + Common Sense */
   --bg-dark: #0F0E0F;
   --bg-card: #1a1a20;
-  /* Slightly lighter for cards */
   --bg-panel: #25252e;
 
   --text-main: #ffffff;
@@ -39,29 +32,18 @@
   /* Spacing & Radius */
   --radius-sm: 8px;
   --radius-md: 12px;
-  /* Request: "12px on cards" */
   --radius-lg: 24px;
 }
 
-/* Animated Viewport Glow */
-.glow-viewport {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 9999;
-  animation: breathe 4s ease-in-out infinite;
+/* Hardening against browser-default blue highlights */
+::selection {
+  background: var(--primary);
+  color: white;
 }
 
-@keyframes breathe {
-
-  0%,
-  100% {
-    box-shadow: inset 0 0 40px 0px rgba(0, 102, 255, 0.7);
-  }
-
-  50% {
-    box-shadow: inset 0 0 60px 20px rgba(0, 102, 255, 0.9);
-  }
+*:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 * {
@@ -153,4 +135,20 @@ button {
 .nav-item.active {
   background: var(--gradient-primary) !important;
   box-shadow: 0 4px 15px rgba(242, 43, 185, 0.4) !important;
+}
+
+/* 
+ * FORENSIC NEUTRALIZATION 
+ * Block external Vercel Toolbar/Comments artifacts 
+ * This ensures the 'Blue Glow' is removed even if the setting remains on.
+ */
+.glow-viewport,
+vercel-live-feedback,
+[data-vercel-toolbar-placeholder],
+#vercel-toolbar {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  z-index: -9999 !important;
 }

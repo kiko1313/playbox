@@ -42,3 +42,5 @@ wrangler.toml
 
 # legacy backup
 _legacy_backup
+
+.vercel

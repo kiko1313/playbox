@@ -95,17 +95,23 @@ export default function WatchPage({ params }: { params: Promise<{ id: string }> 
         
         .video-wrapper {
           width: 100%;
+          max-width: 100%;
+          max-height: 80vh;
           aspect-ratio: 16/9;
           background: #000;
           border-radius: var(--radius-lg);
           overflow: hidden;
           box-shadow: 0 10px 40px rgba(0,0,0,0.5);
           margin-bottom: 1.5rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
         
         .iframe-player, .native-player {
           width: 100%;
           height: 100%;
+          object-fit: contain;
         }
         
         .info-section h1 {
